@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../models/meal.dart';
+import '../services/favorites_service.dart';
 
 class MealCard extends StatelessWidget {
   final Meal meal;
@@ -9,6 +11,9 @@ class MealCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final favs = context.watch<FavoritesService>();
+    final isFav = favs.isFavorite(meal);
+
     return InkWell(
       onTap: onTap,
       child: Card(
@@ -17,10 +22,32 @@ class MealCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Expanded(
-              child: Image.network(
-                meal.thumbnail,
-                fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => const Icon(Icons.fastfood),
+              child: Stack(
+                children: [
+                  Positioned.fill(
+                    child: Image.network(
+                      meal.thumbnail,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) =>
+                      const Icon(Icons.fastfood, size: 80),
+                    ),
+                  ),
+
+                  // ❤️ Heart Icon
+                  Positioned(
+                    top: 6,
+                    right: 6,
+                    child: IconButton(
+                      icon: Icon(
+                        isFav ? Icons.favorite : Icons.favorite_border,
+                        color: Colors.red,
+                      ),
+                      onPressed: () {
+                        favs.toggleFavorite(meal);
+                      },
+                    ),
+                  ),
+                ],
               ),
             ),
             Padding(
@@ -29,7 +56,8 @@ class MealCard extends StatelessWidget {
                 meal.name,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+                style: const TextStyle(
+                    fontSize: 14, fontWeight: FontWeight.w600),
               ),
             ),
           ],

@@ -4,6 +4,8 @@ import '../services/api_service.dart';
 import '../widgets/category_card.dart';
 import 'meals_by_category_screen.dart';
 import 'meal_detail_screen.dart';
+import 'favorites_screen.dart';
+import '../services/notification_service.dart';
 
 class CategoriesScreen extends StatefulWidget {
   const CategoriesScreen({super.key});
@@ -27,29 +29,27 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
         _allCategories = list;
         _filtered = list;
       });
-    }).catchError((e) {
-      // ignore
     });
   }
 
   void _onSearchChanged(String q) {
     final lower = q.toLowerCase();
     setState(() {
-      _filtered = _allCategories.where((c) => c.name.toLowerCase().contains(lower) || c.description.toLowerCase().contains(lower)).toList();
+      _filtered = _allCategories.where((c) =>
+      c.name.toLowerCase().contains(lower) ||
+          c.description.toLowerCase().contains(lower)).toList();
     });
   }
 
   Future<void> _openRandom() async {
     final mealDetail = await ApiService.fetchRandomMeal();
-    if (mealDetail != null) {
-      if (!mounted) return;
+    if (mealDetail != null && mounted) {
       Navigator.push(
         context,
-        MaterialPageRoute(builder: (_) => MealDetailScreen(mealDetail: mealDetail)),
+        MaterialPageRoute(
+          builder: (_) => MealDetailScreen(mealDetail: mealDetail),
+        ),
       );
-    } else {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Can not load random recipe')));
     }
   }
 
@@ -59,20 +59,44 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
       appBar: AppBar(
         title: const Text('Food categories'),
         actions: [
+          /// ❤️ Favorites screen button
           IconButton(
-            tooltip: 'Random recipe',
+            icon: const Icon(Icons.favorite),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const FavoritesScreen(),
+                ),
+              );
+            },
+          ),
+
+          /// 🔔 Daily notification setter
+          IconButton(
+            icon: const Icon(Icons.notifications),
+            onPressed: () {
+              NotificationService.scheduleDailyNotification(5, 22); // 20:00
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Daily notification set!')),
+              );
+            },
+          ),
+
+          /// 🎲 Random recipe
+          IconButton(
             icon: const Icon(Icons.casino),
             onPressed: _openRandom,
-          )
+          ),
         ],
       ),
+
       body: FutureBuilder<List<Category>>(
         future: _futureCategories,
         builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting && _allCategories.isEmpty) {
+          if (snapshot.connectionState == ConnectionState.waiting &&
+              _filtered.isEmpty) {
             return const Center(child: CircularProgressIndicator());
-          } else if (snapshot.hasError && _allCategories.isEmpty) {
-            return Center(child: Text('Error: ${snapshot.error}'));
           }
 
           return Column(
@@ -85,35 +109,31 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
                   decoration: InputDecoration(
                     hintText: 'Search categories...',
                     prefixIcon: const Icon(Icons.search),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
                   ),
                 ),
               ),
               Expanded(
-                child: RefreshIndicator(
-                  onRefresh: () async {
-                    final fresh = await ApiService.fetchCategories();
-                    setState(() {
-                      _allCategories = fresh;
-                      _filtered = fresh;
-                      _searchController.clear();
-                    });
+                child: ListView.builder(
+                  itemCount: _filtered.length,
+                  itemBuilder: (context, index) {
+                    final cat = _filtered[index];
+                    return CategoryCard(
+                      category: cat,
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => MealsByCategoryScreen(
+                              category: cat.name,
+                            ),
+                          ),
+                        );
+                      },
+                    );
                   },
-                  child: ListView.builder(
-                    itemCount: _filtered.length,
-                    itemBuilder: (context, index) {
-                      final cat = _filtered[index];
-                      return CategoryCard(
-                        category: cat,
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(builder: (_) => MealsByCategoryScreen(category: cat.name)),
-                          );
-                        },
-                      );
-                    },
-                  ),
                 ),
               ),
             ],
