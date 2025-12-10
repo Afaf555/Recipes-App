@@ -25,7 +25,7 @@ class MealDetail {
       final ing = json['strIngredient$i'];
       final measure = json['strMeasure$i'];
       if (ing != null && (ing as String).trim().isNotEmpty) {
-        ingredients[ing as String] = (measure as String?)?.trim() ?? '';
+        ingredients[ing] = (measure as String?)?.trim() ?? '';
       }
     }
 

@@ -8,8 +8,6 @@ import 'services/api_service.dart';
 import 'screens/categories_screen.dart';
 import 'screens/favorites_screen.dart';
 import 'screens/meal_detail_screen.dart';
-import 'models/meal_detail.dart';
-import 'services/notification_service.dart';
 
 
 final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
